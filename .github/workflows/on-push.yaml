@@ -14,7 +14,7 @@ jobs:
   build-and-push:
     uses: builderhub/actions-internal/.github/workflows/build-push-image.yaml@main
     with:
-      image-name: builderhub-console
+      image-name: build-console
       local-image-name: builderhub-console
     secrets:
       registry-password: ${{ github.token }}
