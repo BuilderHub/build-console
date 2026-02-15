@@ -35,4 +35,5 @@ next-env.d.ts
 
 # nix
 result
+result-*
 .direnv

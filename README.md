@@ -53,3 +53,40 @@ This project uses Nix flakes for dependency management.
 - Usage analytics and monitoring
 - Team member management
 - API key management
+
+## Building for Production
+
+### Standard Build
+
+```bash
+pnpm build
+pnpm start
+```
+
+### Docker Images with Nix
+
+Build Docker images for any architecture using pure Nix:
+
+```bash
+# Build for current architecture
+make docker-build
+
+# Build for specific architectures
+make docker-build-amd64    # Build for x86_64
+make docker-build-arm64    # Build for ARM64
+
+# Build multi-arch images
+make docker-build-multiarch
+
+# Push to registry
+make docker-push
+
+# Run locally
+make docker-run
+```
+
+The Docker images are built entirely with Nix (no Dockerfile required) and support:
+- Multi-architecture builds (amd64, arm64)
+- Layered images for efficient caching
+- Standalone Next.js output
+- Production-ready configuration
