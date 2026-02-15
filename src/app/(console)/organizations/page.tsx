@@ -1,0 +1,340 @@
+'use client'
+
+import { useState } from 'react'
+import { Header } from '@/components/Header'
+import { Button } from '@/components/Button'
+import { Card, CardHeader } from '@/components/Card'
+import { StatusBadge } from '@/components/StatusBadge'
+import { Modal } from '@/components/Modal'
+import { FormField, SelectField } from '@/components/FormField'
+import { mockOrganizations } from '@/lib/mock-data'
+import type { Organization } from '@/types'
+import { 
+  Plus, 
+  Settings, 
+  Users,
+  Clock,
+  Box,
+  Crown,
+  TrendingUp
+} from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
+
+export default function OrganizationsPage() {
+  const [organizations, setOrganizations] = useState<Organization[]>(mockOrganizations)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
+
+  const [formData, setFormData] = useState({
+    name: '',
+    slug: '',
+    plan: 'starter' as 'starter' | 'pro' | 'enterprise',
+  })
+
+  const handleCreateOrganization = () => {
+    const newOrg: Organization = {
+      id: `org-${Date.now()}`,
+      name: formData.name,
+      slug: formData.slug,
+      plan: formData.plan,
+      builderCount: 0,
+      totalMinutes: 0,
+      monthlyMinutes: 0,
+      createdAt: new Date(),
+      members: [],
+    }
+
+    setOrganizations([...organizations, newOrg])
+    setIsCreateModalOpen(false)
+    resetForm()
+  }
+
+  const handleUpdateOrganization = () => {
+    if (!selectedOrg) return
+
+    setOrganizations(organizations.map(org => 
+      org.id === selectedOrg.id 
+        ? { ...org, ...formData }
+        : org
+    ))
+    setIsSettingsModalOpen(false)
+    setSelectedOrg(null)
+    resetForm()
+  }
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      slug: '',
+      plan: 'starter',
+    })
+  }
+
+  const openSettingsModal = (org: Organization) => {
+    setSelectedOrg(org)
+    setFormData({
+      name: org.name,
+      slug: org.slug,
+      plan: org.plan,
+    })
+    setIsSettingsModalOpen(true)
+  }
+
+  const getPlanBadgeColor = (plan: string) => {
+    switch (plan) {
+      case 'enterprise':
+        return 'text-purple-400 bg-purple-950 border-purple-800'
+      case 'pro':
+        return 'text-primary-400 bg-primary-950 border-primary-800'
+      default:
+        return 'text-slate-400 bg-slate-900 border-slate-700'
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      <Header 
+        title="Organizations" 
+        subtitle={`${organizations.length} organizations`}
+        action={
+          <Button onClick={() => setIsCreateModalOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Create Organization
+          </Button>
+        }
+      />
+      
+      <div className="flex-1 p-8 space-y-6">
+        {organizations.map((org) => (
+          <Card key={org.id}>
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-950/50 border border-primary-800">
+                  <Crown className="h-6 w-6 text-primary-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-white mb-1">
+                    {org.name}
+                  </h3>
+                  <p className="text-sm text-slate-400">@{org.slug}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${getPlanBadgeColor(org.plan)}`}>
+                  {org.plan.charAt(0).toUpperCase() + org.plan.slice(1)} Plan
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => openSettingsModal(org)}
+                >
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
+                  <Box className="h-5 w-5 text-slate-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">{org.builderCount}</p>
+                  <p className="text-xs text-slate-400">Active Builders</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
+                  <Clock className="h-5 w-5 text-slate-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">{org.monthlyMinutes}</p>
+                  <p className="text-xs text-slate-400">Minutes This Month</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
+                  <TrendingUp className="h-5 w-5 text-slate-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">{org.totalMinutes}</p>
+                  <p className="text-xs text-slate-400">Total Minutes</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
+                  <Users className="h-5 w-5 text-slate-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">{org.members.length}</p>
+                  <p className="text-xs text-slate-400">Team Members</p>
+                </div>
+              </div>
+            </div>
+
+            {org.members.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-slate-300 mb-3">Team Members</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {org.members.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center gap-3 rounded-lg bg-slate-800/50 p-3"
+                    >
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-950 border border-primary-800 text-sm font-semibold text-primary-400">
+                        {member.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{member.name}</p>
+                        <p className="text-xs text-slate-400 truncate">{member.email}</p>
+                      </div>
+                      <span className="text-xs text-slate-500 capitalize">{member.role}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <p className="text-xs text-slate-500 mt-6">
+              Created {formatDistanceToNow(org.createdAt, { addSuffix: true })}
+            </p>
+          </Card>
+        ))}
+      </div>
+
+      {/* Create Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false)
+          resetForm()
+        }}
+        title="Create New Organization"
+        subtitle="Set up a new organization for your team"
+      >
+        <form onSubmit={(e) => { e.preventDefault(); handleCreateOrganization(); }} className="space-y-6">
+          <FormField
+            label="Organization Name"
+            name="name"
+            value={formData.name}
+            onChange={(e) => {
+              const name = e.target.value
+              const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+              setFormData({ ...formData, name, slug })
+            }}
+            placeholder="Acme Corp"
+            required
+            hint="The display name for your organization"
+          />
+
+          <FormField
+            label="Organization Slug"
+            name="slug"
+            value={formData.slug}
+            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+            placeholder="acme-corp"
+            required
+            hint="Used in URLs and API calls"
+          />
+
+          <SelectField
+            label="Plan"
+            name="plan"
+            value={formData.plan}
+            onChange={(e) => setFormData({ ...formData, plan: e.target.value as any })}
+            options={[
+              { value: 'starter', label: 'Starter - Free (100 min/month)' },
+              { value: 'pro', label: 'Pro - $29/month (1,000 min/month)' },
+              { value: 'enterprise', label: 'Enterprise - Custom pricing' },
+            ]}
+            required
+          />
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setIsCreateModalOpen(false)
+                resetForm()
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" className="flex-1">
+              Create Organization
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Settings Modal */}
+      <Modal
+        isOpen={isSettingsModalOpen}
+        onClose={() => {
+          setIsSettingsModalOpen(false)
+          setSelectedOrg(null)
+          resetForm()
+        }}
+        title="Organization Settings"
+        subtitle={`Update settings for ${selectedOrg?.name}`}
+      >
+        <form onSubmit={(e) => { e.preventDefault(); handleUpdateOrganization(); }} className="space-y-6">
+          <FormField
+            label="Organization Name"
+            name="name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+          />
+
+          <FormField
+            label="Organization Slug"
+            name="slug"
+            value={formData.slug}
+            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+            required
+          />
+
+          <SelectField
+            label="Plan"
+            name="plan"
+            value={formData.plan}
+            onChange={(e) => setFormData({ ...formData, plan: e.target.value as any })}
+            options={[
+              { value: 'starter', label: 'Starter' },
+              { value: 'pro', label: 'Pro' },
+              { value: 'enterprise', label: 'Enterprise' },
+            ]}
+            required
+          />
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setIsSettingsModalOpen(false)
+                setSelectedOrg(null)
+                resetForm()
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" className="flex-1">
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  )
+}
