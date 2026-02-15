@@ -14,7 +14,7 @@ jobs:
   build-and-push:
     uses: builderhub/actions/.github/workflows/build-push-image.yaml@main
     with:
-      image-name: ghcr.io/${{ github.repository_owner }}/builderhub-console
+      image-name: builderhub-console
       local-image-name: builderhub-console
     secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}
