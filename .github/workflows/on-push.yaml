@@ -12,13 +12,12 @@ on:
 
 jobs:
   build-and-push:
-    uses: builderhub/actions/.github/workflows/build-push-image.yaml@main
+    uses: builderhub/actions-internal/.github/workflows/build-push-image.yaml@main
     with:
       image-name: builderhub-console
       local-image-name: builderhub-console
     secrets:
-      registry-password: ${{ secrets.GITHUB_TOKEN }}
+      registry-password: ${{ github.token }}
     permissions:
       contents: read
       packages: write
-      id-token: write
