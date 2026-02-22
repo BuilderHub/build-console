@@ -17,6 +17,7 @@ jobs:
       packages: write
     uses: builderhub/actions-internal/.github/workflows/build-push-image.yaml@main
     with:
+      build-type: nix
       image-name: build-console
       local-image-name: builderhub-console
     secrets:
