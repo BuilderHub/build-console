@@ -61,61 +61,11 @@
           '';
         };
       
-      mkDockerImage = system:
-        let
-          pkgs = import nixpkgs { inherit system; };
-          app = mkApp system;
-          nodejs = pkgs.nodejs_22;
-          
-          # Get git revision using self.rev if available (when in a git repo)
-          gitRev = self.rev or self.dirtyRev or "unknown";
-        in
-        pkgs.dockerTools.buildLayeredImage {
-          name = "builderhub-console";
-          tag = "latest";
-          
-          contents = with pkgs; [ 
-            bash
-            coreutils
-            gnused
-            nodejs
-          ];
-          
-          config = {
-            Cmd = [ "${nodejs}/bin/npx" "next" "start" "-p" "3001" ];
-            WorkingDir = "/app";
-            ExposedPorts = {
-              "3001/tcp" = {};
-            };
-            Env = [
-              "NODE_ENV=production"
-              "PORT=3001"
-              "HOSTNAME=0.0.0.0"
-              "PATH=/app/node_modules/.bin:${pkgs.bash}/bin:${pkgs.coreutils}/bin:${pkgs.gnused}/bin:${nodejs}/bin"
-            ];
-            Labels = {
-              "org.opencontainers.image.source" = "https://github.com/builderhub/build-console";
-              "org.opencontainers.image.revision" = gitRev;
-              "org.opencontainers.image.title" = "BuilderHub Console";
-              "org.opencontainers.image.description" = "Admin console for managing BuilderHub builders and organizations";
-              "org.opencontainers.image.vendor" = "BuilderHub";
-            };
-          };
-          
-          extraCommands = ''
-            mkdir -p app
-            # Use tar to preserve all symlinks and permissions
-            tar -C ${app} -cf - . | tar -C app -xf -
-            chmod -R 755 app
-          '';
-        };
-      
     in
     {
       packages = forAllSystems (system: {
         default = mkApp system;
         app = mkApp system;
-        docker = mkDockerImage system;
       });
       
       devShells = forAllSystems (system:
