@@ -1,6 +1,9 @@
 import type { User, LoginResponse, RegisterResponse, RefreshResponse } from '@/types/auth'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090'
+const API_BASE =
+  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL?.trim() && !process.env.NEXT_PUBLIC_API_URL.startsWith('/'))
+    ? process.env.NEXT_PUBLIC_API_URL.trim()
+    : 'http://localhost:8090'
 
 async function rawFetch(
   path: string,
@@ -14,7 +17,7 @@ async function rawFetch(
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
-  return fetch(`${API_BASE}${path}`, { ...init, headers: { ...init.headers, ...headers } })
+  return fetch(`${API_BASE}${path}`, { ...init, credentials: 'include', headers: { ...init.headers, ...headers } })
 }
 
 function parseError(res: Response, body: string): string {
@@ -36,8 +39,8 @@ export async function login(email: string, password: string): Promise<LoginRespo
   const data = JSON.parse(text)
   return {
     user: data.user,
-    accessToken: data.access_token,
-    refreshToken: data.refresh_token,
+    accessToken: (data.access_token ?? '').trim(),
+    refreshToken: (data.refresh_token ?? '').trim(),
     expiresIn: data.expires_in,
   }
 }
@@ -56,14 +59,15 @@ export async function register(
   const data = JSON.parse(text)
   return {
     user: data.user,
-    accessToken: data.access_token,
-    refreshToken: data.refresh_token,
+    accessToken: (data.access_token ?? '').trim(),
+    refreshToken: (data.refresh_token ?? '').trim(),
     expiresIn: data.expires_in,
   }
 }
 
-export async function getMe(token: string): Promise<User> {
-  const res = await rawFetch('/v1/auth/me', { token })
+/** Get current user. Pass token for header auth, or omit to rely on cookie (credentials: 'include'). */
+export async function getMe(token?: string | null): Promise<User> {
+  const res = await rawFetch('/v1/auth/me', { token: token ?? undefined })
   const text = await res.text()
   if (!res.ok) throw new Error(parseError(res, text))
   const data = JSON.parse(text)
@@ -79,7 +83,12 @@ export async function refreshToken(refreshToken: string): Promise<RefreshRespons
   if (!res.ok) throw new Error(parseError(res, text))
   const data = JSON.parse(text)
   return {
-    accessToken: data.access_token,
+    accessToken: (data.access_token ?? '').trim(),
     expiresIn: data.expires_in,
   }
+}
+
+/** Call logout endpoint so the API clears the auth cookie (required for cookie-based auth). */
+export async function logout(): Promise<void> {
+  await fetch(`${API_BASE}/v1/auth/logout`, { method: 'POST', credentials: 'include' })
 }

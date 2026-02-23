@@ -11,7 +11,7 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@/types/auth'
-import { login as apiLogin, register as apiRegister, getMe, refreshToken } from '@/lib/auth-api'
+import { login as apiLogin, register as apiRegister, getMe, refreshToken, logout as apiLogout } from '@/lib/auth-api'
 
 const ACCESS_KEY = 'access_token'
 const REFRESH_KEY = 'refresh_token'
@@ -40,8 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUser = useCallback(async () => {
     if (typeof window === 'undefined') return
-    const access = localStorage.getItem(ACCESS_KEY)
-    const refreshVal = localStorage.getItem(REFRESH_KEY)
+    const access = (localStorage.getItem(ACCESS_KEY) ?? '').trim() || null
+    const refreshVal = (localStorage.getItem(REFRESH_KEY) ?? '').trim() || null
 
     // Use session-stored user from fresh login/register (avoids getMe race)
     const sessionUser = sessionStorage.getItem(USER_KEY)
@@ -58,7 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (!access && !refreshVal) {
-      setUser(null)
+      try {
+        const u = await getMe(null)
+        setUser(u)
+      } catch {
+        setUser(null)
+      }
       setIsLoading(false)
       return
     }
@@ -69,10 +74,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token = accessToken
         localStorage.setItem(ACCESS_KEY, accessToken)
       }
-      if (token) {
-        const u = await getMe(token)
+      if (!token) {
+        try {
+          const u = await getMe(null)
+          setUser(u)
+        } catch {
+          localStorage.removeItem(ACCESS_KEY)
+          localStorage.removeItem(REFRESH_KEY)
+          setUser(null)
+        }
+        setIsLoading(false)
+        return
+      }
+      let u: User | null = null
+      try {
+        u = await getMe(token)
+      } catch {
+        if (refreshVal) {
+          const { accessToken: newAccess } = await refreshToken(refreshVal)
+          localStorage.setItem(ACCESS_KEY, newAccess)
+          u = await getMe(newAccess)
+        }
+        if (!u) {
+          const cookieUser = await getMe(null).catch(() => null)
+          u = cookieUser
+        }
+      }
+      if (u) {
         setUser(u)
       } else {
+        localStorage.removeItem(ACCESS_KEY)
+        localStorage.removeItem(REFRESH_KEY)
         setUser(null)
       }
     } catch {
@@ -122,7 +154,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   )
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await apiLogout().catch(() => {})
     localStorage.removeItem(ACCESS_KEY)
     localStorage.removeItem(REFRESH_KEY)
     sessionStorage.removeItem(USER_KEY)
