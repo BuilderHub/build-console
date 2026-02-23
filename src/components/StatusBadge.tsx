@@ -7,7 +7,7 @@ interface StatusBadgeProps {
 }
 
 const statusConfig = {
-  idle: { label: 'Idle', color: 'text-slate-400 bg-slate-900 border-slate-700' },
+  idle: { label: 'Online', color: 'text-slate-400 bg-slate-900 border-slate-700' },
   building: { label: 'Building', color: 'text-primary-400 bg-primary-950 border-primary-800' },
   offline: { label: 'Offline', color: 'text-slate-500 bg-slate-900 border-slate-700' },
   error: { label: 'Error', color: 'text-red-400 bg-red-950 border-red-800' },

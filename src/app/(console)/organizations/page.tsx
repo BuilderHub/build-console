@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Button } from '@/components/Button'
 import { Card } from '@/components/Card'
@@ -26,6 +27,7 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 
 export default function OrganizationsPage() {
+  const router = useRouter()
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -56,6 +58,12 @@ export default function OrganizationsPage() {
   useEffect(() => {
     loadOrgs()
   }, [loadOrgs])
+
+  useEffect(() => {
+    if (!loading && organizations.length === 1) {
+      router.replace(`/org/${organizations[0].slug}/dashboard`)
+    }
+  }, [loading, organizations, router])
 
   const handleCreateOrganization = async () => {
     setSubmitting(true)
