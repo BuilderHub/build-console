@@ -2,17 +2,19 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { 
-  LayoutDashboard, 
-  Box, 
-  Building2, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Box,
+  Building2,
+  Settings,
   Users,
   Key,
   BarChart3,
-  Boxes
+  Boxes,
+  LogOut,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { useAuth } from '@/contexts/AuthContext'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -24,8 +26,18 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((s) => s[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
 export function Sidebar() {
   const pathname = usePathname()
+  const { user, logout } = useAuth()
 
   return (
     <div className="flex h-full w-64 flex-col border-r border-slate-800 bg-slate-900/50">
@@ -61,15 +73,25 @@ export function Sidebar() {
 
       {/* User section */}
       <div className="border-t border-slate-800 p-4">
-        <div className="flex items-center gap-3 rounded-lg bg-slate-800/50 p-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-950 border border-primary-800 text-sm font-semibold text-primary-400">
-            JD
+        {user ? (
+          <div className="flex items-center gap-3 rounded-lg bg-slate-800/50 p-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary-800 bg-primary-950 text-sm font-semibold text-primary-400">
+              {initials(user.name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-slate-200">{user.name}</p>
+              <p className="truncate text-xs text-slate-400">{user.email}</p>
+            </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-200 truncate">John Doe</p>
-            <p className="text-xs text-slate-400 truncate">john@acme.com</p>
-          </div>
-        </div>
+        ) : null}
       </div>
     </div>
   )
