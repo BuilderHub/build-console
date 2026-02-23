@@ -1,6 +1,6 @@
 import type { User, LoginResponse, RegisterResponse, RefreshResponse } from '@/types/auth'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090'
 
 async function rawFetch(
   path: string,

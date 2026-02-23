@@ -15,6 +15,7 @@ import { login as apiLogin, register as apiRegister, getMe, refreshToken } from 
 
 const ACCESS_KEY = 'access_token'
 const REFRESH_KEY = 'refresh_token'
+const USER_KEY = 'user'
 
 interface AuthContextValue {
   user: User | null
@@ -41,6 +42,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined') return
     const access = localStorage.getItem(ACCESS_KEY)
     const refreshVal = localStorage.getItem(REFRESH_KEY)
+
+    // Use session-stored user from fresh login/register (avoids getMe race)
+    const sessionUser = sessionStorage.getItem(USER_KEY)
+    if (sessionUser) {
+      try {
+        const u = JSON.parse(sessionUser)
+        setUser(u)
+        sessionStorage.removeItem(USER_KEY)
+      } catch {
+        sessionStorage.removeItem(USER_KEY)
+      }
+      setIsLoading(false)
+      return
+    }
+
     if (!access && !refreshVal) {
       setUser(null)
       setIsLoading(false)
@@ -79,14 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await apiLogin(email, password)
         localStorage.setItem(ACCESS_KEY, res.accessToken)
         localStorage.setItem(REFRESH_KEY, res.refreshToken)
-        setUser(res.user)
-        router.push('/dashboard')
+        sessionStorage.setItem(USER_KEY, JSON.stringify(res.user))
+        window.location.href = '/dashboard'
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Login failed')
         throw e
       }
     },
-    [router]
+    []
   )
 
   const register = useCallback(
@@ -96,19 +112,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await apiRegister(email, password, name)
         localStorage.setItem(ACCESS_KEY, res.accessToken)
         localStorage.setItem(REFRESH_KEY, res.refreshToken)
-        setUser(res.user)
-        router.push('/dashboard')
+        sessionStorage.setItem(USER_KEY, JSON.stringify(res.user))
+        window.location.href = '/dashboard'
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Registration failed')
         throw e
       }
     },
-    [router]
+    []
   )
 
   const logout = useCallback(() => {
     localStorage.removeItem(ACCESS_KEY)
     localStorage.removeItem(REFRESH_KEY)
+    sessionStorage.removeItem(USER_KEY)
     setUser(null)
     router.push('/login')
   }, [router])
