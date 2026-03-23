@@ -1,4 +1,4 @@
-import type { Organization } from '@/types'
+import type { Member, Organization } from '@/types'
 import { api } from '@/lib/api'
 
 interface OrgResponse {
@@ -57,4 +57,36 @@ export async function updateOrganization(
     body: JSON.stringify({ id, ...params }),
   })
   return mapOrg(data.organization)
+}
+
+interface MemberResponse {
+  user_id?: string
+  userId?: string
+  email: string
+  name: string
+  role: string
+  joined_at?: number
+  joinedAt?: number
+}
+
+function mapMember(m: MemberResponse): Member {
+  const joined =
+    m.joined_at ?? m.joinedAt ?? 0
+  const role = m.role as Member['role']
+  const safeRole: Member['role'] =
+    role === 'owner' || role === 'admin' || role === 'member' ? role : 'member'
+  return {
+    id: m.user_id ?? m.userId ?? '',
+    name: m.name,
+    email: m.email,
+    role: safeRole,
+    joinedAt: new Date(joined * 1000),
+  }
+}
+
+export async function listOrganizationMembers(organizationId: string): Promise<Member[]> {
+  const data = await api<{ members: MemberResponse[] }>(
+    `/v1/organizations/${encodeURIComponent(organizationId)}/members`
+  )
+  return (data.members ?? []).map(mapMember)
 }

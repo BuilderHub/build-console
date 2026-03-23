@@ -82,15 +82,18 @@
               docker
               skopeo
               gnumake
+              tilt
             ];
 
             shellHook = ''
               echo "🎛️  BuilderHub Console Dev Environment"
               echo "Node.js version: $(node --version)"
               echo "pnpm version: $(pnpm --version)"
+              echo "Tilt version: $(tilt version)"
               echo ""
               echo "Run 'pnpm install' to install dependencies"
               echo "Run 'pnpm dev' to start the development server"
+              echo "Run 'tilt up' from the repo root when using Tilt"
               echo "Run 'make help' for available targets"
             '';
           };
