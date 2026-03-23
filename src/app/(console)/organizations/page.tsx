@@ -1,30 +1,40 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Button } from '@/components/Button'
-import { Card, CardHeader } from '@/components/Card'
-import { StatusBadge } from '@/components/StatusBadge'
+import { Card } from '@/components/Card'
 import { Modal } from '@/components/Modal'
 import { FormField, SelectField } from '@/components/FormField'
-import { mockOrganizations } from '@/lib/mock-data'
+import {
+  listOrganizations,
+  createOrganization,
+  updateOrganization,
+} from '@/lib/organizations-api'
 import type { Organization } from '@/types'
-import { 
-  Plus, 
-  Settings, 
+import Link from 'next/link'
+import {
+  Plus,
+  Settings,
   Users,
   Clock,
   Box,
   Crown,
-  TrendingUp
+  TrendingUp,
+  LayoutDashboard,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 export default function OrganizationsPage() {
-  const [organizations, setOrganizations] = useState<Organization[]>(mockOrganizations)
+  const router = useRouter()
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -32,35 +42,69 @@ export default function OrganizationsPage() {
     plan: 'starter' as 'starter' | 'pro' | 'enterprise',
   })
 
-  const handleCreateOrganization = () => {
-    const newOrg: Organization = {
-      id: `org-${Date.now()}`,
-      name: formData.name,
-      slug: formData.slug,
-      plan: formData.plan,
-      builderCount: 0,
-      totalMinutes: 0,
-      monthlyMinutes: 0,
-      createdAt: new Date(),
-      members: [],
+  const loadOrgs = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const list = await listOrganizations()
+      setOrganizations(list)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load organizations')
+    } finally {
+      setLoading(false)
     }
+  }, [])
 
-    setOrganizations([...organizations, newOrg])
-    setIsCreateModalOpen(false)
-    resetForm()
+  useEffect(() => {
+    loadOrgs()
+  }, [loadOrgs])
+
+  useEffect(() => {
+    if (!loading && organizations.length === 1) {
+      router.replace(`/org/${organizations[0].slug}/dashboard`)
+    }
+  }, [loading, organizations, router])
+
+  const handleCreateOrganization = async () => {
+    setSubmitting(true)
+    setError(null)
+    try {
+      const newOrg = await createOrganization({
+        name: formData.name,
+        slug: formData.slug,
+        plan: formData.plan,
+      })
+      setOrganizations((prev) => [...prev, newOrg])
+      setIsCreateModalOpen(false)
+      resetForm()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to create organization')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const handleUpdateOrganization = () => {
+  const handleUpdateOrganization = async () => {
     if (!selectedOrg) return
-
-    setOrganizations(organizations.map(org => 
-      org.id === selectedOrg.id 
-        ? { ...org, ...formData }
-        : org
-    ))
-    setIsSettingsModalOpen(false)
-    setSelectedOrg(null)
-    resetForm()
+    setSubmitting(true)
+    setError(null)
+    try {
+      const updated = await updateOrganization(selectedOrg.id, {
+        name: formData.name || undefined,
+        slug: formData.slug || undefined,
+        plan: formData.plan || undefined,
+      })
+      setOrganizations((prev) =>
+        prev.map((org) => (org.id === selectedOrg.id ? updated : org))
+      )
+      setIsSettingsModalOpen(false)
+      setSelectedOrg(null)
+      resetForm()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to update organization')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const resetForm = () => {
@@ -72,6 +116,7 @@ export default function OrganizationsPage() {
   }
 
   const openSettingsModal = (org: Organization) => {
+    setError(null)
     setSelectedOrg(org)
     setFormData({
       name: org.name,
@@ -79,6 +124,11 @@ export default function OrganizationsPage() {
       plan: org.plan,
     })
     setIsSettingsModalOpen(true)
+  }
+
+  const openCreateModal = () => {
+    setError(null)
+    setIsCreateModalOpen(true)
   }
 
   const getPlanBadgeColor = (plan: string) => {
@@ -92,20 +142,46 @@ export default function OrganizationsPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full">
-      <Header 
-        title="Organizations" 
+      <Header
+        title="Organizations"
         subtitle={`${organizations.length} organizations`}
         action={
-          <Button onClick={() => setIsCreateModalOpen(true)}>
+          <Button onClick={openCreateModal}>
             <Plus className="h-4 w-4" />
             Create Organization
           </Button>
         }
       />
-      
+
       <div className="flex-1 p-8 space-y-6">
+        {error && (
+          <p className="rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-400">
+            {error}
+          </p>
+        )}
+        {organizations.length === 0 && !error ? (
+          <Card>
+            <div className="py-12 text-center">
+              <Crown className="mx-auto h-12 w-12 text-slate-500" />
+              <p className="mt-4 text-slate-400">No organizations yet</p>
+              <p className="mt-1 text-sm text-slate-500">Create one to get started</p>
+              <Button onClick={openCreateModal} className="mt-6">
+                <Plus className="h-4 w-4" />
+                Create Organization
+              </Button>
+            </div>
+          </Card>
+        ) : null}
         {organizations.map((org) => (
           <Card key={org.id}>
             <div className="flex items-start justify-between mb-6">
@@ -125,6 +201,12 @@ export default function OrganizationsPage() {
                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${getPlanBadgeColor(org.plan)}`}>
                   {org.plan.charAt(0).toUpperCase() + org.plan.slice(1)} Plan
                 </span>
+                <Link href={`/org/${org.slug}/dashboard`}>
+                  <Button size="sm">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Open
+                  </Button>
+                </Link>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -219,6 +301,11 @@ export default function OrganizationsPage() {
         subtitle="Set up a new organization for your team"
       >
         <form onSubmit={(e) => { e.preventDefault(); handleCreateOrganization(); }} className="space-y-6">
+          {error && (
+            <p className="rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-400">
+              {error}
+            </p>
+          )}
           <FormField
             label="Organization Name"
             name="name"
@@ -268,7 +355,7 @@ export default function OrganizationsPage() {
             >
               Cancel
             </Button>
-            <Button type="submit" className="flex-1">
+            <Button type="submit" className="flex-1" loading={submitting}>
               Create Organization
             </Button>
           </div>
@@ -287,6 +374,11 @@ export default function OrganizationsPage() {
         subtitle={`Update settings for ${selectedOrg?.name}`}
       >
         <form onSubmit={(e) => { e.preventDefault(); handleUpdateOrganization(); }} className="space-y-6">
+          {error && (
+            <p className="rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-400">
+              {error}
+            </p>
+          )}
           <FormField
             label="Organization Name"
             name="name"
@@ -329,7 +421,7 @@ export default function OrganizationsPage() {
             >
               Cancel
             </Button>
-            <Button type="submit" className="flex-1">
+            <Button type="submit" className="flex-1" loading={submitting}>
               Save Changes
             </Button>
           </div>

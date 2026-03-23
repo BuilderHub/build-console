@@ -6,8 +6,9 @@ interface FormFieldProps {
   type?: 'text' | 'email' | 'password' | 'number'
   placeholder?: string
   value: string | number
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
   required?: boolean
+  readOnly?: boolean
   hint?: string
   error?: string
 }
@@ -20,6 +21,7 @@ export function FormField({
   value,
   onChange,
   required = false,
+  readOnly = false,
   hint,
   error,
 }: FormFieldProps) {
@@ -27,7 +29,7 @@ export function FormField({
     <div>
       <label htmlFor={name} className="block text-sm font-medium text-slate-200 mb-2">
         {label}
-        {required && <span className="text-red-400 ml-1">*</span>}
+        {required && !readOnly && <span className="text-red-400 ml-1">*</span>}
       </label>
       <input
         type={type}
@@ -36,11 +38,13 @@ export function FormField({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        required={required}
+        required={required && !readOnly}
+        readOnly={readOnly}
         className={clsx(
           'w-full rounded-lg border bg-slate-800/50 px-4 py-2.5 text-sm text-white placeholder-slate-500 transition-colors',
           'focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600',
-          error ? 'border-red-600' : 'border-slate-700'
+          error ? 'border-red-600' : 'border-slate-700',
+          readOnly && 'cursor-default opacity-80'
         )}
       />
       {hint && !error && (

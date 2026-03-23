@@ -16,13 +16,17 @@ import {
 import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Builders', href: '/builders', icon: Box },
+const orgScopedNav = (slug: string) => [
+  { name: 'Dashboard', href: `/org/${slug}/dashboard`, icon: LayoutDashboard },
+  { name: 'Team', href: `/org/${slug}/team`, icon: Users },
+  { name: 'Builders', href: `/org/${slug}/builders`, icon: Box },
+  { name: 'API Keys', href: `/org/${slug}/api-keys`, icon: Key },
+  { name: 'Usage', href: `/org/${slug}/usage`, icon: BarChart3 },
+  { name: 'Settings', href: `/org/${slug}/settings`, icon: Settings },
+]
+
+const globalNav = [
   { name: 'Organizations', href: '/organizations', icon: Building2 },
-  { name: 'Team', href: '/team', icon: Users },
-  { name: 'Usage', href: '/usage', icon: BarChart3 },
-  { name: 'API Keys', href: '/api-keys', icon: Key },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
@@ -49,26 +53,30 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto scrollbar-thin">
-        {navigation.map((item) => {
-          const isActive = pathname?.startsWith(item.href)
-          const Icon = item.icon
-          
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={clsx(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
-                isActive
-                  ? 'bg-primary-950/50 text-primary-400 border border-primary-800'
-                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              {item.name}
-            </Link>
-          )
-        })}
+        {(() => {
+          const orgMatch = pathname?.match(/^\/org\/([^/]+)/)
+          const slug = orgMatch?.[1]
+          const items = slug ? [{ name: 'Organizations', href: '/organizations', icon: Building2 }, ...orgScopedNav(slug)] : globalNav
+          return items.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/organizations' && pathname?.startsWith(item.href + '/'))
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.name + item.href}
+                href={item.href}
+                className={clsx(
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+                  isActive
+                    ? 'bg-primary-950/50 text-primary-400 border border-primary-800'
+                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                {item.name}
+              </Link>
+            )
+          })
+        })()}
       </nav>
 
       {/* User section */}
