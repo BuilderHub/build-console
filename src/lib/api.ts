@@ -64,5 +64,9 @@ export async function api<T>(
     throw new Error(message)
   }
 
-  return res.json() as Promise<T>
+  const text = await res.text()
+  if (!text.trim()) {
+    return undefined as T
+  }
+  return JSON.parse(text) as T
 }

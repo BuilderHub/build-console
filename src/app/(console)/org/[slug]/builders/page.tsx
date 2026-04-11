@@ -145,8 +145,6 @@ export default function OrgBuildersPage() {
     setActiveDropdown(null)
   }
 
-  const sizeConfig = BUILDER_SIZES[formData.size]
-
   if (!org) return null
 
   if (loading) {
@@ -399,18 +397,6 @@ export default function OrgBuildersPage() {
                 }}
               />
             </div>
-          </div>
-
-          <div className="rounded-lg bg-slate-800/50 border border-slate-700 p-4">
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-slate-400">Estimated Cost</span>
-              <span className="text-white font-semibold">
-                ${sizeConfig.price.toFixed(2)}/min
-              </span>
-            </div>
-            <p className="text-xs text-slate-500">
-              Based on {sizeConfig.cpu} vCPU and {sizeConfig.memory} GB RAM
-            </p>
           </div>
 
           <div className="flex gap-3 pt-4">

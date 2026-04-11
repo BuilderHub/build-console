@@ -17,7 +17,6 @@ function mapOrg(o: OrgResponse): Organization {
     id: o.id,
     name: o.name,
     slug: o.slug,
-    plan: o.plan as 'starter' | 'pro' | 'enterprise',
     builderCount: o.builder_count ?? 0,
     totalMinutes: Number(o.total_minutes) ?? 0,
     monthlyMinutes: Number(o.monthly_minutes) ?? 0,
@@ -36,27 +35,31 @@ export async function getOrganization(id: string): Promise<Organization> {
   return mapOrg(data.organization)
 }
 
-export async function createOrganization(params: {
-  name: string
-  slug: string
-  plan: string
-}): Promise<Organization> {
+const defaultPlan = 'starter'
+
+export async function createOrganization(params: { name: string; slug: string }): Promise<Organization> {
   const data = await api<{ organization: OrgResponse }>('/v1/organizations', {
     method: 'POST',
-    body: JSON.stringify(params),
+    body: JSON.stringify({ name: params.name, slug: params.slug, plan: defaultPlan }),
   })
   return mapOrg(data.organization)
 }
 
 export async function updateOrganization(
   id: string,
-  params: { name?: string; slug?: string; plan?: string }
+  params: { name?: string; slug?: string }
 ): Promise<Organization> {
   const data = await api<{ organization: OrgResponse }>(`/v1/organizations/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     body: JSON.stringify({ id, ...params }),
   })
   return mapOrg(data.organization)
+}
+
+export async function deleteOrganization(id: string): Promise<void> {
+  await api<undefined>(`/v1/organizations/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
 }
 
 interface MemberResponse {

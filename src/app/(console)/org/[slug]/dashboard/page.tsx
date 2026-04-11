@@ -21,7 +21,7 @@ export default function OrgDashboardPage() {
   const stats = [
     { label: 'Active Builders', value: activeBuilders.length.toString(), change: '+2 this month', icon: Box, trend: 'up' as const },
     { label: 'Builds This Month', value: '342', change: '+12% from last month', icon: Activity, trend: 'up' as const },
-    { label: 'Build Minutes', value: `${org.monthlyMinutes}`, change: `of ${org.plan === 'pro' ? '1,000' : 'unlimited'} used`, icon: Clock, trend: 'neutral' as const },
+    { label: 'Build Minutes', value: `${org.monthlyMinutes}`, change: 'this month', icon: Clock, trend: 'neutral' as const },
     { label: 'Success Rate', value: '94.2%', change: '+2.1% from last month', icon: CheckCircle2, trend: 'up' as const },
   ]
 
