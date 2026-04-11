@@ -5,7 +5,6 @@ export const mockOrganizations: Organization[] = [
     id: 'org-1',
     name: 'Acme Corp',
     slug: 'acme-corp',
-    plan: 'pro',
     builderCount: 5,
     totalMinutes: 15420,
     monthlyMinutes: 2340,

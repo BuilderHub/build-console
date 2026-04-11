@@ -24,7 +24,6 @@ export interface Organization {
   id: string
   name: string
   slug: string
-  plan: 'starter' | 'pro' | 'enterprise'
   builderCount: number
   totalMinutes: number
   monthlyMinutes: number
@@ -60,11 +59,11 @@ export interface BuildLog {
   completedAt?: Date
 }
 
-export const BUILDER_SIZES: Record<BuilderSize, { cpu: number; memory: number; price: number }> = {
-  small: { cpu: 2, memory: 4, price: 0.02 },
-  medium: { cpu: 4, memory: 8, price: 0.04 },
-  large: { cpu: 8, memory: 16, price: 0.08 },
-  xlarge: { cpu: 16, memory: 32, price: 0.16 },
+export const BUILDER_SIZES: Record<BuilderSize, { cpu: number; memory: number }> = {
+  small: { cpu: 2, memory: 4 },
+  medium: { cpu: 4, memory: 8 },
+  large: { cpu: 8, memory: 16 },
+  xlarge: { cpu: 16, memory: 32 },
 }
 
 export const REGIONS: Record<Region, string> = {

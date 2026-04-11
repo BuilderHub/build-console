@@ -6,7 +6,7 @@ import { Header } from '@/components/Header'
 import { Button } from '@/components/Button'
 import { Card } from '@/components/Card'
 import { Modal } from '@/components/Modal'
-import { FormField, SelectField } from '@/components/FormField'
+import { FormField } from '@/components/FormField'
 import {
   listOrganizations,
   createOrganization,
@@ -39,7 +39,6 @@ export default function OrganizationsPage() {
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
-    plan: 'starter' as 'starter' | 'pro' | 'enterprise',
   })
 
   const loadOrgs = useCallback(async () => {
@@ -72,7 +71,6 @@ export default function OrganizationsPage() {
       const newOrg = await createOrganization({
         name: formData.name,
         slug: formData.slug,
-        plan: formData.plan,
       })
       setOrganizations((prev) => [...prev, newOrg])
       setIsCreateModalOpen(false)
@@ -92,7 +90,6 @@ export default function OrganizationsPage() {
       const updated = await updateOrganization(selectedOrg.id, {
         name: formData.name || undefined,
         slug: formData.slug || undefined,
-        plan: formData.plan || undefined,
       })
       setOrganizations((prev) =>
         prev.map((org) => (org.id === selectedOrg.id ? updated : org))
@@ -111,7 +108,6 @@ export default function OrganizationsPage() {
     setFormData({
       name: '',
       slug: '',
-      plan: 'starter',
     })
   }
 
@@ -121,7 +117,6 @@ export default function OrganizationsPage() {
     setFormData({
       name: org.name,
       slug: org.slug,
-      plan: org.plan,
     })
     setIsSettingsModalOpen(true)
   }
@@ -129,17 +124,6 @@ export default function OrganizationsPage() {
   const openCreateModal = () => {
     setError(null)
     setIsCreateModalOpen(true)
-  }
-
-  const getPlanBadgeColor = (plan: string) => {
-    switch (plan) {
-      case 'enterprise':
-        return 'text-purple-400 bg-purple-950 border-purple-800'
-      case 'pro':
-        return 'text-primary-400 bg-primary-950 border-primary-800'
-      default:
-        return 'text-slate-400 bg-slate-900 border-slate-700'
-    }
   }
 
   if (loading) {
@@ -198,9 +182,6 @@ export default function OrganizationsPage() {
               </div>
               
               <div className="flex items-center gap-3">
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${getPlanBadgeColor(org.plan)}`}>
-                  {org.plan.charAt(0).toUpperCase() + org.plan.slice(1)} Plan
-                </span>
                 <Link href={`/org/${org.slug}/dashboard`}>
                   <Button size="sm">
                     <LayoutDashboard className="h-4 w-4" />
@@ -330,19 +311,6 @@ export default function OrganizationsPage() {
             hint="Used in URLs and API calls"
           />
 
-          <SelectField
-            label="Plan"
-            name="plan"
-            value={formData.plan}
-            onChange={(e) => setFormData({ ...formData, plan: e.target.value as any })}
-            options={[
-              { value: 'starter', label: 'Starter - Free (100 min/month)' },
-              { value: 'pro', label: 'Pro - $29/month (1,000 min/month)' },
-              { value: 'enterprise', label: 'Enterprise - Custom pricing' },
-            ]}
-            required
-          />
-
           <div className="flex gap-3 pt-4">
             <Button
               type="button"
@@ -392,19 +360,6 @@ export default function OrganizationsPage() {
             name="slug"
             value={formData.slug}
             onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-            required
-          />
-
-          <SelectField
-            label="Plan"
-            name="plan"
-            value={formData.plan}
-            onChange={(e) => setFormData({ ...formData, plan: e.target.value as any })}
-            options={[
-              { value: 'starter', label: 'Starter' },
-              { value: 'pro', label: 'Pro' },
-              { value: 'enterprise', label: 'Enterprise' },
-            ]}
             required
           />
 
