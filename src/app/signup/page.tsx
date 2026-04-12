@@ -19,7 +19,7 @@ export default function SignupPage() {
     clearError()
     setLoading(true)
     try {
-      await register(email, password, name)
+      await register(email.trim(), password, name.trim())
     } catch {
       // error set in context
     } finally {

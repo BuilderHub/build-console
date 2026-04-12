@@ -5,6 +5,8 @@ const API_BASE =
     ? process.env.NEXT_PUBLIC_API_URL.trim()
     : 'http://localhost:8090'
 
+const ACCESS_KEY = 'access_token'
+
 async function rawFetch(
   path: string,
   opts: RequestInit & { token?: string | null } = {}
@@ -29,6 +31,30 @@ function parseError(res: Response, body: string): string {
   }
 }
 
+function getStoredAccessToken(): string | null {
+  if (typeof window === 'undefined') return null
+  const t = localStorage.getItem(ACCESS_KEY)
+  return t?.trim() || null
+}
+
+/** Normalize grpc-gateway / proto JSON (snake_case) to User. */
+export function mapUser(raw: unknown): User {
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('Invalid user payload')
+  }
+  const o = raw as Record<string, unknown>
+  const id = String(o.id ?? '')
+  const email = String(o.email ?? '')
+  const name = String(o.name ?? '')
+  const createdAt =
+    typeof o.createdAt === 'number'
+      ? o.createdAt
+      : typeof o.created_at === 'number'
+        ? o.created_at
+        : 0
+  return { id, email, name, createdAt }
+}
+
 export async function login(email: string, password: string): Promise<LoginResponse> {
   const res = await rawFetch('/v1/auth/login', {
     method: 'POST',
@@ -38,7 +64,7 @@ export async function login(email: string, password: string): Promise<LoginRespo
   if (!res.ok) throw new Error(parseError(res, text))
   const data = JSON.parse(text)
   return {
-    user: data.user,
+    user: mapUser(data.user),
     accessToken: (data.access_token ?? '').trim(),
     refreshToken: (data.refresh_token ?? '').trim(),
     expiresIn: data.expires_in,
@@ -58,7 +84,7 @@ export async function register(
   if (!res.ok) throw new Error(parseError(res, text))
   const data = JSON.parse(text)
   return {
-    user: data.user,
+    user: mapUser(data.user),
     accessToken: (data.access_token ?? '').trim(),
     refreshToken: (data.refresh_token ?? '').trim(),
     expiresIn: data.expires_in,
@@ -71,7 +97,21 @@ export async function getMe(token?: string | null): Promise<User> {
   const text = await res.text()
   if (!res.ok) throw new Error(parseError(res, text))
   const data = JSON.parse(text)
-  return data.user
+  return mapUser(data.user)
+}
+
+/** Update display name for the authenticated user. */
+export async function updateProfile(name: string): Promise<User> {
+  const token = getStoredAccessToken()
+  const res = await rawFetch('/v1/auth/me', {
+    method: 'PATCH',
+    body: JSON.stringify({ name: name.trim() }),
+    token: token ?? undefined,
+  })
+  const text = await res.text()
+  if (!res.ok) throw new Error(parseError(res, text))
+  const data = JSON.parse(text)
+  return mapUser(data.user)
 }
 
 export async function refreshToken(refreshToken: string): Promise<RefreshResponse> {

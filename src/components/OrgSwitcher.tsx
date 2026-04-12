@@ -42,7 +42,9 @@ export function OrgSwitcher() {
         className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-left text-sm font-medium text-slate-200 hover:border-slate-600 hover:bg-slate-800 transition-colors min-w-[12rem]"
       >
         <Building2 className="h-4 w-4 shrink-0 text-slate-400" />
-        <span className="truncate flex-1">{org?.name ?? slug}</span>
+        <span className="truncate flex-1">
+          {org?.name ?? slug ?? 'Organizations'}
+        </span>
         <ChevronDown
           className={clsx('h-4 w-4 shrink-0 text-slate-400 transition-transform', open && 'rotate-180')}
         />
@@ -64,7 +66,7 @@ export function OrgSwitcher() {
               {orgs.map((o) => (
                 <li key={o.id}>
                   <Link
-                    href={`/org/${o.slug}/dashboard`}
+                    href={`/org/${o.slug}/builders`}
                     onClick={() => setOpen(false)}
                     className={clsx(
                       'flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors',

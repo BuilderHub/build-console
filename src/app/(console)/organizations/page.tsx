@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { Button } from '@/components/Button'
 import { Card } from '@/components/Card'
@@ -12,22 +11,13 @@ import {
   createOrganization,
   updateOrganization,
 } from '@/lib/organizations-api'
+import { pluralize } from '@/lib/pluralize'
 import type { Organization } from '@/types'
 import Link from 'next/link'
-import {
-  Plus,
-  Settings,
-  Users,
-  Clock,
-  Box,
-  Crown,
-  TrendingUp,
-  LayoutDashboard,
-} from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { Plus, Settings, Users, Box, Crown } from 'lucide-react'
+import { formatDistanceToNow, isValid } from 'date-fns'
 
 export default function OrganizationsPage() {
-  const router = useRouter()
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -57,12 +47,6 @@ export default function OrganizationsPage() {
   useEffect(() => {
     loadOrgs()
   }, [loadOrgs])
-
-  useEffect(() => {
-    if (!loading && organizations.length === 1) {
-      router.replace(`/org/${organizations[0].slug}/dashboard`)
-    }
-  }, [loading, organizations, router])
 
   const handleCreateOrganization = async () => {
     setSubmitting(true)
@@ -138,7 +122,7 @@ export default function OrganizationsPage() {
     <div className="flex flex-col h-full">
       <Header
         title="Organizations"
-        subtitle={`${organizations.length} organizations`}
+        subtitle={`${organizations.length} ${pluralize(organizations.length, 'organization', 'organizations')}`}
         action={
           <Button onClick={openCreateModal}>
             <Plus className="h-4 w-4" />
@@ -182,9 +166,9 @@ export default function OrganizationsPage() {
               </div>
               
               <div className="flex items-center gap-3">
-                <Link href={`/org/${org.slug}/dashboard`}>
+                <Link href={`/org/${org.slug}/builders`}>
                   <Button size="sm">
-                    <LayoutDashboard className="h-4 w-4" />
+                    <Box className="h-4 w-4" />
                     Open
                   </Button>
                 </Link>
@@ -199,34 +183,16 @@ export default function OrganizationsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
                   <Box className="h-5 w-5 text-slate-400" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-white">{org.builderCount}</p>
-                  <p className="text-xs text-slate-400">Active Builders</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
-                  <Clock className="h-5 w-5 text-slate-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-white">{org.monthlyMinutes}</p>
-                  <p className="text-xs text-slate-400">Minutes This Month</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
-                  <TrendingUp className="h-5 w-5 text-slate-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-white">{org.totalMinutes}</p>
-                  <p className="text-xs text-slate-400">Total Minutes</p>
+                  <p className="text-xs text-slate-400">
+                    {pluralize(org.builderCount, 'Builder', 'Builders')}
+                  </p>
                 </div>
               </div>
 
@@ -235,37 +201,20 @@ export default function OrganizationsPage() {
                   <Users className="h-5 w-5 text-slate-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-white">{org.members.length}</p>
-                  <p className="text-xs text-slate-400">Team Members</p>
+                  <p className="text-2xl font-bold text-white">{org.memberCount}</p>
+                  <p className="text-xs text-slate-400">
+                    {pluralize(org.memberCount, 'Team member', 'Team members')}
+                  </p>
                 </div>
               </div>
             </div>
 
-            {org.members.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-slate-300 mb-3">Team Members</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {org.members.map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center gap-3 rounded-lg bg-slate-800/50 p-3"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-950 border border-primary-800 text-sm font-semibold text-primary-400">
-                        {member.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{member.name}</p>
-                        <p className="text-xs text-slate-400 truncate">{member.email}</p>
-                      </div>
-                      <span className="text-xs text-slate-500 capitalize">{member.role}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <p className="text-xs text-slate-500 mt-6">
-              Created {formatDistanceToNow(org.createdAt, { addSuffix: true })}
+              {isValid(org.createdAt) ? (
+                <>Created {formatDistanceToNow(org.createdAt, { addSuffix: true })}</>
+              ) : (
+                <>Created date unavailable</>
+              )}
             </p>
           </Card>
         ))}
