@@ -11,7 +11,15 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@/types/auth'
-import { login as apiLogin, register as apiRegister, getMe, refreshToken, logout as apiLogout } from '@/lib/auth-api'
+import {
+  login as apiLogin,
+  register as apiRegister,
+  getMe,
+  refreshToken,
+  logout as apiLogout,
+  updateProfile as apiUpdateProfile,
+  mapUser,
+} from '@/lib/auth-api'
 
 const ACCESS_KEY = 'access_token'
 const REFRESH_KEY = 'refresh_token'
@@ -23,6 +31,7 @@ interface AuthContextValue {
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string, name: string) => Promise<void>
+  updateProfile: (name: string) => Promise<void>
   logout: () => void
   error: string | null
   clearError: () => void
@@ -47,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sessionUser = sessionStorage.getItem(USER_KEY)
     if (sessionUser) {
       try {
-        const u = JSON.parse(sessionUser)
+        const u = mapUser(JSON.parse(sessionUser))
         setUser(u)
         sessionStorage.removeItem(USER_KEY)
       } catch {
@@ -154,6 +163,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   )
 
+  const updateProfile = useCallback(async (name: string) => {
+    setError(null)
+    try {
+      const u = await apiUpdateProfile(name)
+      setUser(u)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to update profile')
+      throw e
+    }
+  }, [])
+
   const logout = useCallback(async () => {
     await apiLogout().catch(() => {})
     localStorage.removeItem(ACCESS_KEY)
@@ -170,11 +190,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!user,
       login,
       register,
+      updateProfile,
       logout,
       error,
       clearError,
     }),
-    [user, isLoading, login, register, logout, error, clearError]
+    [user, isLoading, login, register, updateProfile, logout, error, clearError]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

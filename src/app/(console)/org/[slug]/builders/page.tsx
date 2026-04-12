@@ -10,6 +10,7 @@ import { Modal } from '@/components/Modal'
 import { FormField, SelectField, CheckboxField } from '@/components/FormField'
 import { useOrg } from '@/contexts/OrgContext'
 import { listBuilders, createBuilder, deleteBuilder, wakeBuilder } from '@/lib/builders-api'
+import { pluralize } from '@/lib/pluralize'
 import { BUILDER_SIZES, REGIONS } from '@/types'
 import type { Builder, BuilderSize, Region } from '@/types'
 
@@ -159,7 +160,7 @@ export default function OrgBuildersPage() {
     <div className="flex flex-col h-full">
       <Header 
         title="Builders" 
-        subtitle={`${builders.length} active builders`}
+        subtitle={`${builders.length} active ${pluralize(builders.length, 'builder', 'builders')}`}
         action={
           <Button onClick={() => setIsCreateModalOpen(true)}>
             <Plus className="h-4 w-4" />

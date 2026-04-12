@@ -6,6 +6,7 @@ import { Button } from '@/components/Button'
 import { Card } from '@/components/Card'
 import { useOrg } from '@/contexts/OrgContext'
 import { listOrganizationMembers } from '@/lib/organizations-api'
+import { pluralize } from '@/lib/pluralize'
 import type { Member } from '@/types'
 import { UserPlus, Shield, Mail } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -68,8 +69,8 @@ export default function OrgTeamPage() {
         title="Team"
         subtitle={
           membersLoading
-            ? `Loading members…`
-            : `${organization.members.length} member${organization.members.length === 1 ? '' : 's'} in ${organization.name}`
+            ? 'Loading team…'
+            : `${organization.members.length} ${pluralize(organization.members.length, 'team member', 'team members')} in ${organization.name}`
         }
         action={
           <Button

@@ -25,6 +25,8 @@ export interface Organization {
   name: string
   slug: string
   builderCount: number
+  /** Member count from the API (list/get org); may differ from members.length if members not loaded. */
+  memberCount: number
   totalMinutes: number
   monthlyMinutes: number
   createdAt: Date

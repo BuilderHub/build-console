@@ -1,5 +1,3 @@
-import { Bell, Search } from 'lucide-react'
-
 interface HeaderProps {
   title: string
   subtitle?: string
@@ -16,19 +14,10 @@ export function Header({ title, subtitle, action }: HeaderProps) {
             <p className="text-sm text-slate-400">{subtitle}</p>
           )}
         </div>
-        
-        <div className="flex items-center gap-4">
-          {action}
-          
-          <button className="relative rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors">
-            <Search className="h-5 w-5" />
-          </button>
-          
-          <button className="relative rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors">
-            <Bell className="h-5 w-5" />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary-500" />
-          </button>
-        </div>
+
+        {action ? (
+          <div className="flex items-center gap-4">{action}</div>
+        ) : null}
       </div>
     </header>
   )

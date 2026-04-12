@@ -2,25 +2,43 @@ import type { Member, Organization } from '@/types'
 import { api } from '@/lib/api'
 
 interface OrgResponse {
-  id: string
-  name: string
-  slug: string
-  plan: string
-  created_at: number
-  builder_count: number
-  total_minutes: number
-  monthly_minutes: number
+  id?: string
+  name?: string
+  slug?: string
+  plan?: string
+  created_at?: number
+  createdAt?: number
+  builder_count?: number
+  builderCount?: number
+  total_minutes?: number
+  totalMinutes?: number
+  monthly_minutes?: number
+  monthlyMinutes?: number
+  member_count?: number
+  memberCount?: number
+}
+
+/** gRPC-Gateway JSON uses camelCase; numeric timestamps are Unix seconds from the API. */
+function parseCreatedAt(o: OrgResponse): Date {
+  const raw = o.created_at ?? o.createdAt
+  if (raw === undefined || raw === null) return new Date(NaN)
+  const n = typeof raw === 'number' ? raw : Number(raw)
+  if (!Number.isFinite(n) || n <= 0) return new Date(NaN)
+  // Heuristic: ms since epoch is ~1.7e12 in 2020s; seconds are ~1.7e9
+  if (n > 1e12) return new Date(n)
+  return new Date(n * 1000)
 }
 
 function mapOrg(o: OrgResponse): Organization {
   return {
-    id: o.id,
-    name: o.name,
-    slug: o.slug,
-    builderCount: o.builder_count ?? 0,
-    totalMinutes: Number(o.total_minutes) ?? 0,
-    monthlyMinutes: Number(o.monthly_minutes) ?? 0,
-    createdAt: new Date((o.created_at ?? 0) * 1000),
+    id: String(o.id ?? ''),
+    name: String(o.name ?? ''),
+    slug: String(o.slug ?? ''),
+    builderCount: Number(o.builder_count ?? o.builderCount ?? 0),
+    memberCount: Number(o.member_count ?? o.memberCount ?? 0),
+    totalMinutes: Number(o.total_minutes ?? o.totalMinutes ?? 0),
+    monthlyMinutes: Number(o.monthly_minutes ?? o.monthlyMinutes ?? 0),
+    createdAt: parseCreatedAt(o),
     members: [],
   }
 }
@@ -73,8 +91,7 @@ interface MemberResponse {
 }
 
 function mapMember(m: MemberResponse): Member {
-  const joined =
-    m.joined_at ?? m.joinedAt ?? 0
+  const joined = m.joined_at ?? m.joinedAt ?? 0
   const role = m.role as Member['role']
   const safeRole: Member['role'] =
     role === 'owner' || role === 'admin' || role === 'member' ? role : 'member'

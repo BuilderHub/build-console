@@ -17,8 +17,7 @@ jobs:
       packages: write
     uses: builderhub/actions-internal/.github/workflows/build-push-image.yaml@main
     with:
-      build-type: dockerfile
       image-name: build-console
-      local-image-name: builderhub-console
+      push-to-registry: ${{ github.event_name == 'push' }}
     secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}

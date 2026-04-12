@@ -1,57 +1,72 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Header } from '@/components/Header'
 import { Button } from '@/components/Button'
 import { Card, CardHeader } from '@/components/Card'
-import { FormField, CheckboxField } from '@/components/FormField'
-import { mockOrganizations } from '@/lib/mock-data'
-import { Save, AlertCircle } from 'lucide-react'
+import { FormField } from '@/components/FormField'
+import { useAuth } from '@/contexts/AuthContext'
+import { Save } from 'lucide-react'
 
 export default function SettingsPage() {
-  const [organization] = useState(mockOrganizations[0])
-  const [profile, setProfile] = useState({
-    name: 'John Doe',
-    email: 'john@acme.com',
-  })
+  const { user, isLoading, updateProfile, error: authError, clearError } = useAuth()
+  const [name, setName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [profileMessage, setProfileMessage] = useState<string | null>(null)
+  const [profileError, setProfileError] = useState<string | null>(null)
 
-  const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    buildFailureAlerts: true,
-    weeklyReports: false,
-    autoScaleBuilders: true,
-  })
+  useEffect(() => {
+    if (user) {
+      setName(user.name)
+    }
+  }, [user])
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Save profile logic
+    setProfileMessage(null)
+    setProfileError(null)
+    const trimmed = name.trim()
+    if (!trimmed) {
+      setProfileError('Name is required')
+      return
+    }
+    setSaving(true)
+    try {
+      await updateProfile(trimmed)
+      setProfileMessage('Profile saved')
+    } catch {
+      // error surfaced via context or below
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleSavePreferences = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Save preferences logic
+  if (isLoading || !user) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col h-full">
-      <Header 
-        title="Settings" 
-        subtitle="Manage your account and preferences"
-      />
-      
-      <div className="flex-1 p-8 space-y-6">
-        {/* Profile Settings */}
+      <Header title="Settings" subtitle="Manage your account" />
+
+      <div className="flex-1 p-8">
         <Card>
-          <CardHeader 
-            title="Profile" 
-            subtitle="Update your personal information"
-          />
+          <CardHeader title="Profile" subtitle="Update your personal information" />
           <form onSubmit={handleSaveProfile} className="space-y-6">
             <FormField
               label="Full Name"
               name="name"
-              value={profile.name}
-              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value)
+                setProfileMessage(null)
+                setProfileError(null)
+                clearError()
+              }}
               required
             />
 
@@ -59,102 +74,27 @@ export default function SettingsPage() {
               label="Email Address"
               name="email"
               type="email"
-              value={profile.email}
-              onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-              required
+              value={user.email}
+              readOnly
+              hint="Email cannot be changed here"
             />
 
-            <Button type="submit">
+            {(profileError || authError) && (
+              <p className="rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-400">
+                {profileError ?? authError}
+              </p>
+            )}
+            {profileMessage && (
+              <p className="rounded-lg border border-emerald-800 bg-emerald-950/50 px-3 py-2 text-sm text-emerald-400">
+                {profileMessage}
+              </p>
+            )}
+
+            <Button type="submit" loading={saving}>
               <Save className="h-4 w-4" />
               Save Changes
             </Button>
           </form>
-        </Card>
-
-        {/* Notification Preferences */}
-        <Card>
-          <CardHeader 
-            title="Notifications" 
-            subtitle="Configure how you receive updates"
-          />
-          <form onSubmit={handleSavePreferences} className="space-y-6">
-            <div className="space-y-4">
-              <CheckboxField
-                label="Email Notifications"
-                name="emailNotifications"
-                checked={preferences.emailNotifications}
-                onChange={(e) => setPreferences({ ...preferences, emailNotifications: e.target.checked })}
-                hint="Receive email notifications for important events"
-              />
-
-              <CheckboxField
-                label="Build Failure Alerts"
-                name="buildFailureAlerts"
-                checked={preferences.buildFailureAlerts}
-                onChange={(e) => setPreferences({ ...preferences, buildFailureAlerts: e.target.checked })}
-                hint="Get notified immediately when a build fails"
-              />
-
-              <CheckboxField
-                label="Weekly Reports"
-                name="weeklyReports"
-                checked={preferences.weeklyReports}
-                onChange={(e) => setPreferences({ ...preferences, weeklyReports: e.target.checked })}
-                hint="Receive a weekly summary of your build activity"
-              />
-            </div>
-
-            <Button type="submit">
-              <Save className="h-4 w-4" />
-              Save Preferences
-            </Button>
-          </form>
-        </Card>
-
-        {/* Builder Preferences */}
-        <Card>
-          <CardHeader 
-            title="Builder Configuration" 
-            subtitle="Default settings for new builders"
-          />
-          <form onSubmit={handleSavePreferences} className="space-y-6">
-            <CheckboxField
-              label="Auto-scale Builders"
-              name="autoScaleBuilders"
-              checked={preferences.autoScaleBuilders}
-              onChange={(e) => setPreferences({ ...preferences, autoScaleBuilders: e.target.checked })}
-              hint="Automatically adjust builder capacity based on demand"
-            />
-
-            <Button type="submit">
-              <Save className="h-4 w-4" />
-              Save Configuration
-            </Button>
-          </form>
-        </Card>
-
-        {/* Danger Zone */}
-        <Card>
-          <CardHeader 
-            title="Danger Zone" 
-            subtitle="Irreversible actions"
-          />
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-red-950/20 border border-red-800/30">
-              <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-red-400 mb-1">
-                  Delete Organization
-                </p>
-                <p className="text-sm text-slate-400 mb-3">
-                  Permanently delete {organization.name} and all associated data. This action cannot be undone.
-                </p>
-                <Button variant="danger" size="sm">
-                  Delete Organization
-                </Button>
-              </div>
-            </div>
-          </div>
         </Card>
       </div>
     </div>
