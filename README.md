@@ -2,6 +2,10 @@
 
 Admin console for managing BuilderHub organizations, builders, and infrastructure.
 
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
 ## Development
 
 This project uses Nix flakes for dependency management.
