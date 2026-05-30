@@ -11,9 +11,14 @@ export interface Builder {
   size: BuilderSize
   region: Region
   status: BuilderStatus
+  mode?: string // sleepy | persistent (ephemeral removed from console)
   cacheSize: number // GB
   maxCacheSize: number // GB
   platform: string[]
+  // Custom cpu/memory overrides (from manual creation or labels). Used for display in cards.
+  // If absent, fall back to BUILDER_SIZES[size].
+  cpu?: string
+  memory?: string
   createdAt: Date
   lastUsed?: Date
   buildCount: number
@@ -74,3 +79,36 @@ export const REGIONS: Record<Region, string> = {
   'eu-central': 'EU Central (Frankfurt)',
   'ap-southeast': 'Asia Pacific (Singapore)',
 }
+
+// --- Builder Templates (org-scoped) ---
+
+export type CacheType = 'pvc' | 'none' | 's3'
+
+export interface BuilderTemplate {
+  id: string
+  name: string
+  organizationId: string
+  buildkitImage: string
+  rootless: boolean
+  arch: '' | 'amd64' | 'arm64'
+  cacheType: CacheType
+  cacheSize?: string // e.g. "25Gi" when cacheType === 'pvc'
+  resources?: ResourceRequirements
+}
+
+export interface ResourceRequirements {
+  limits?: Record<string, string>
+  requests?: Record<string, string>
+}
+
+export const DEFAULT_CACHE_SIZES: Record<string, string> = {
+  small: '10Gi',
+  medium: '25Gi',
+  large: '50Gi',
+  xlarge: '100Gi',
+}
+
+export const COMMON_BUILDKIT_IMAGES = [
+  'moby/buildkit:master-rootless',
+  'moby/buildkit:v0.16.0-rootless',
+]

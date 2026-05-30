@@ -15,6 +15,16 @@ const statusConfig = {
   failed: { label: 'Failed', color: 'text-red-400 bg-red-950 border-red-800' },
 }
 
+// Custom dot colors per status (the circle indicator)
+const dotColor = {
+  idle: 'bg-emerald-500',
+  building: undefined, // uses the special animate-pulse + bg-current logic
+  offline: 'bg-slate-500',
+  error: 'bg-red-500',
+  success: 'bg-emerald-500',
+  failed: 'bg-red-500',
+}
+
 export function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
   const config = statusConfig[status]
   
@@ -29,7 +39,9 @@ export function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
       <span
         className={clsx(
           'rounded-full',
-          status === 'building' ? 'animate-pulse bg-current' : 'bg-current',
+          status === 'building'
+            ? 'animate-pulse bg-current'
+            : dotColor[status as keyof typeof dotColor] || 'bg-current',
           size === 'sm' ? 'h-1.5 w-1.5' : 'h-2 w-2'
         )}
       />
