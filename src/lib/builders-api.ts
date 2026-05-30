@@ -61,8 +61,18 @@ function mapBuilder(p: ProtoBuilder, organizationId: string): Builder {
   const nodePort = status.nodePort ?? status.node_port ?? 0
   const phase = status.phase ?? status.Phase ?? ''
   const hasEndpoint = Boolean(status.endpoint || nodePort > 0)
-  const statusResolved =
+  let statusResolved =
     phase ? protoPhaseToStatus(phase) : (hasEndpoint ? 'idle' : 'offline')
+
+  const builderMode = (spec.mode as string) || (labels.mode as string) || 'sleepy'
+
+  // Note: We no longer force non-sleepy modes to "idle". Persistent builders
+  // should reflect their real k8s state (so users can see if the pod is
+  // actually running). Sleepy mode continues to show the scaled state.
+
+  // Support custom cpu/memory from labels (set during manual creation)
+  const customCpu = labels.cpu as string | undefined
+  const customMemory = labels.memory as string | undefined
 
   return {
     id: name,
@@ -71,9 +81,12 @@ function mapBuilder(p: ProtoBuilder, organizationId: string): Builder {
     size: BUILDER_SIZE_KEYS.includes(size) ? size : 'medium',
     region: REGION_KEYS.includes(region) ? region : 'us-east',
     status: statusResolved,
+    mode: builderMode,
     cacheSize: 0,
     maxCacheSize,
     platform,
+    cpu: customCpu,
+    memory: customMemory,
     createdAt: new Date(),
     buildCount: 0,
     totalMinutes: 0,

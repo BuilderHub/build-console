@@ -1,6 +1,10 @@
 # BuilderHub build console - deploy to cluster via Helm
 # Requires: default_registry (e.g. localhost:5000) set by root Tiltfile for Kind
 # build-api runs locally on :8090; browser must call it directly (no Next.js proxy) so auth headers are sent
+
+# BuilderHub build console - deploy to cluster via Helm
+# Requires: default_registry (e.g. localhost:5000) set by root Tiltfile for Kind
+# build-api runs locally on :8090; browser must call it directly (no Next.js proxy) so auth headers are sent
 docker_build(
     'build-console',
     '.',

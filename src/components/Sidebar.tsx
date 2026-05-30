@@ -11,6 +11,7 @@ import {
   // BarChart3,
   Boxes,
   LogOut,
+  Layers,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAuth } from '@/contexts/AuthContext'
@@ -20,6 +21,7 @@ import { OrgSwitcher } from '@/components/OrgSwitcher'
 const orgScopedNav = (slug: string) => [
   // { name: 'Dashboard', href: `/org/${slug}/dashboard`, icon: LayoutDashboard },
   { name: 'Builders', href: `/org/${slug}/builders`, icon: Box },
+  { name: 'Templates', href: `/org/${slug}/templates`, icon: Layers },
   { name: 'Team', href: `/org/${slug}/team`, icon: Users },
   // { name: 'Usage', href: `/org/${slug}/usage`, icon: BarChart3 },
   { name: 'Settings', href: `/org/${slug}/settings`, icon: Settings },
