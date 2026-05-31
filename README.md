@@ -1,6 +1,8 @@
 # BuilderHub Console
 
-Admin console for managing BuilderHub organizations, builders, and infrastructure.
+Admin console for managing BuilderHub organizations, builder templates, and builders.
+
+Templates define the runtime configuration for builders (BuildKit image, resources, cache backend, etc.). Builders are then created from these templates with a chosen lifecycle mode (sleepy or persistent).
 
 ## License
 
@@ -52,11 +54,14 @@ This project uses Nix flakes for dependency management.
 ## Features
 
 - Organization management
-- Builder CRUD operations
-- Builder configuration (size, cache, regions)
-- Usage analytics and monitoring
+- **Templates**: Create and manage reusable builder templates with custom resources (CPU/memory requests & limits), BuildKit image, cache configuration (PVC, S3, or none), and other settings.
+- **Builders**: Create builders from templates. Choose lifecycle mode (sleepy for scale-to-zero with preserved cache, or persistent for always-on). Resources are pulled from the selected template for accurate display.
+- Builder list with live resource display from templates
 - Team member management
-- API key management
+- API key management with fine-grained scopes (including `templates:read` / `templates:write`)
+- Settings and organization configuration
+
+Note: Ephemeral mode has been removed. Only `sleepy` and `persistent` modes are supported.
 
 ## Building for Production
 
