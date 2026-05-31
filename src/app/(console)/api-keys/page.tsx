@@ -39,6 +39,16 @@ const SCOPE_OPTIONS: { value: string; label: string; description: string }[] = [
     label: 'Builders (write)',
     description: 'Create, update, delete, and wake builders',
   },
+  {
+    value: 'templates:read',
+    label: 'Templates (read)',
+    description: 'List and view builder templates',
+  },
+  {
+    value: 'templates:write',
+    label: 'Templates (write)',
+    description: 'Create, update, and delete builder templates',
+  },
 ]
 
 const EXPIRY_OPTIONS = [

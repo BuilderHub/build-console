@@ -92,11 +92,25 @@ export default function OrgBuildersPage() {
     setSubmitting(true)
     setError(null)
     try {
+      const labels: Record<string, string> = {}
+
+      // Pull the actual CPU/memory from the selected template so the builder
+      // cards show the correct values instead of always falling back to size presets.
+      if (selectedTemplateRef) {
+        const tpl = availableTemplates.find(t => t.name === selectedTemplateRef)
+        if (tpl?.resources) {
+          const cpu = tpl.resources.requests?.cpu || tpl.resources.limits?.cpu
+          const mem = tpl.resources.requests?.memory || tpl.resources.limits?.memory
+          if (cpu) labels.cpu = cpu
+          if (mem) labels.memory = mem
+        }
+      }
+
       const spec: any = {
         template_ref: selectedTemplateRef,
         mode: formData.mode,
         replicas: 1,
-        // No size/maxCache/platform labels needed anymore — resources come from the template.
+        ...(Object.keys(labels).length > 0 ? { labels } : {}),
       }
 
       // Only send idle timeout for sleepy mode. Persistent should stay running.
@@ -179,6 +193,30 @@ export default function OrgBuildersPage() {
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
       </div>
     )
+  }
+
+  // Resolve the best CPU/memory values to display for a builder.
+  // Priority: 1. Snapshot on the builder (labels at creation time)
+  //           2. Resolve from the referenced template (live from template definition)
+  //           3. Fall back to the size preset
+  const getBuilderResources = (b: Builder) => {
+    if (b.cpu && b.memory) {
+      return { cpu: b.cpu, memory: b.memory }
+    }
+    if (b.templateRef) {
+      const tpl = availableTemplates.find(t => t.name === b.templateRef)
+      if (tpl?.resources) {
+        const cpu = tpl.resources.requests?.cpu || tpl.resources.limits?.cpu
+        const mem = tpl.resources.requests?.memory || tpl.resources.limits?.memory
+        if (cpu && mem) {
+          return { cpu, memory: mem }
+        }
+      }
+    }
+    return {
+      cpu: BUILDER_SIZES[b.size].cpu,
+      memory: BUILDER_SIZES[b.size].memory,
+    }
   }
 
   return (
@@ -270,18 +308,21 @@ export default function OrgBuildersPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Cpu className="h-4 w-4 text-slate-500" />
-                    <span className="text-slate-400">
-                      {(builder.cpu ?? BUILDER_SIZES[builder.size].cpu)} vCPU
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <HardDrive className="h-4 w-4 text-slate-500" />
-                    <span className="text-slate-400">
-                      {(builder.memory ?? BUILDER_SIZES[builder.size].memory)} GB RAM
-                    </span>
-                  </div>
+                  {(() => {
+                    const res = getBuilderResources(builder)
+                    return (
+                      <>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Cpu className="h-4 w-4 text-slate-500" />
+                          <span className="text-slate-400">{res.cpu}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <HardDrive className="h-4 w-4 text-slate-500" />
+                          <span className="text-slate-400">{res.memory}</span>
+                        </div>
+                      </>
+                    )
+                  })()}
                   {/* Region disabled for now; restore when needed
                   <div className="flex items-center gap-2 text-sm">
                     <MapPin className="h-4 w-4 text-slate-500" />

@@ -70,9 +70,11 @@ function mapBuilder(p: ProtoBuilder, organizationId: string): Builder {
   // should reflect their real k8s state (so users can see if the pod is
   // actually running). Sleepy mode continues to show the scaled state.
 
-  // Support custom cpu/memory from labels (set during manual creation)
+  // Support custom cpu/memory from labels (captured at creation time from the template)
   const customCpu = labels.cpu as string | undefined
   const customMemory = labels.memory as string | undefined
+
+  const templateRef = (spec.template_ref as string) || (spec.templateRef as string) || undefined
 
   return {
     id: name,
@@ -85,6 +87,7 @@ function mapBuilder(p: ProtoBuilder, organizationId: string): Builder {
     cacheSize: 0,
     maxCacheSize,
     platform,
+    templateRef,
     cpu: customCpu,
     memory: customMemory,
     createdAt: new Date(),
