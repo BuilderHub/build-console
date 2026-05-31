@@ -11,12 +11,13 @@ export interface Builder {
   size: BuilderSize
   region: Region
   status: BuilderStatus
-  mode?: string // sleepy | persistent (ephemeral removed from console)
+  mode?: string // sleepy | persistent
   cacheSize: number // GB
   maxCacheSize: number // GB
   platform: string[]
-  // Custom cpu/memory overrides (from manual creation or labels). Used for display in cards.
-  // If absent, fall back to BUILDER_SIZES[size].
+  templateRef?: string
+  // Snapshot of cpu/memory from the template at creation time (for display).
+  // If absent, we try to resolve via templateRef using loaded templates.
   cpu?: string
   memory?: string
   createdAt: Date
