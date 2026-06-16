@@ -18,6 +18,7 @@ jobs:
     uses: builderhub/actions-internal/.github/workflows/build-push-image.yaml@main
     with:
       image-name: build-console
+      buildx-args: '--build-arg NEXT_PUBLIC_API_URL=https://api.builder-hub.dev'
       push-to-registry: ${{ github.event_name == 'push' }}
     secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}
