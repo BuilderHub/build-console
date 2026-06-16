@@ -1,9 +1,7 @@
 import type { User, LoginResponse, RegisterResponse, RefreshResponse } from '@/types/auth'
+import { getApiBase } from '@/lib/api-base'
 
-const API_BASE =
-  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL?.trim() && !process.env.NEXT_PUBLIC_API_URL.startsWith('/'))
-    ? process.env.NEXT_PUBLIC_API_URL.trim()
-    : 'http://localhost:8090'
+const API_BASE = getApiBase()
 
 const ACCESS_KEY = 'access_token'
 

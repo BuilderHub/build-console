@@ -8,7 +8,7 @@ docker_build(
     build_args={'NEXT_PUBLIC_API_URL': 'http://localhost:8090'},
 )
 k8s_yaml(helm(
-    'helm/build-console',
+    '../helm/charts/build-console',
     set=[
         'image.repository=build-console',
         'image.pullPolicy=Always',
