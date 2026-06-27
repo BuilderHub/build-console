@@ -112,6 +112,18 @@ export async function updateProfile(name: string): Promise<User> {
   return mapUser(data.user)
 }
 
+/** Change password for the authenticated user. */
+export async function updatePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const token = getStoredAccessToken()
+  const res = await rawFetch('/v1/auth/me/password', {
+    method: 'PATCH',
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    token: token ?? undefined,
+  })
+  const text = await res.text()
+  if (!res.ok) throw new Error(parseError(res, text))
+}
+
 export async function refreshToken(refreshToken: string): Promise<RefreshResponse> {
   const res = await rawFetch('/v1/auth/refresh', {
     method: 'POST',
