@@ -11,6 +11,7 @@ import { Modal } from '@/components/Modal'
 import { FormField, SelectField, CheckboxField } from '@/components/FormField'
 import { useOrg } from '@/contexts/OrgContext'
 import { listBuilders, createBuilder, deleteBuilder, wakeBuilder, generateBuilderCredentials, type BuilderCredentials } from '@/lib/builders-api'
+import { createZip } from '@/lib/zip'
 import { listTemplates, createTemplate } from '@/lib/templates-api'
 import { pluralize } from '@/lib/pluralize'
 import { BUILDER_SIZES, REGIONS } from '@/types'
@@ -36,8 +37,7 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import clsx from 'clsx'
 
-function downloadText(filename: string, content: string) {
-  const blob = new Blob([content], { type: 'application/x-pem-file' })
+function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -168,16 +168,21 @@ export default function OrgBuildersPage() {
     }
   }
 
-  const handleGetCredentials = async (builder: Builder) => {
-    if (!org?.id) return
+  const handleOpenCredentials = (builder: Builder) => {
     setActiveDropdown(null)
     setCredsBuilder(builder)
     setCreds(null)
     setCredsError(null)
     setCredsModalOpen(true)
+  }
+
+  const handleMintCredentials = async () => {
+    if (!org?.id || !credsBuilder) return
+    setCreds(null)
+    setCredsError(null)
     setCredsLoading(true)
     try {
-      const c = await generateBuilderCredentials(org.id, builder.name)
+      const c = await generateBuilderCredentials(org.id, credsBuilder.name)
       setCreds(c)
     } catch (e) {
       setCredsError(e instanceof Error ? e.message : 'Failed to generate credentials')
@@ -430,7 +435,7 @@ export default function OrgBuildersPage() {
                     )}
                     <button
                       type="button"
-                      onClick={() => handleGetCredentials(builder)}
+                      onClick={() => handleOpenCredentials(builder)}
                       className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-200 hover:border-primary-600 hover:text-primary-300"
                     >
                       <KeyRound className="h-3.5 w-3.5" />
@@ -647,6 +652,21 @@ export default function OrgBuildersPage() {
               {credsError}
             </p>
           )}
+          {!creds && !credsLoading && (
+            <div>
+              <p className="text-sm text-slate-300">
+                Generate a new mutual-TLS client certificate to connect to this builder with buildx.
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Each click issues a fresh 90-day certificate that is shown only once — download the files
+                before closing. Previously downloaded certificates keep working until they expire.
+              </p>
+              <Button type="button" className="mt-3" onClick={handleMintCredentials}>
+                <KeyRound className="mr-1.5 h-3.5 w-3.5" />
+                {credsError ? 'Generate new credentials' : 'Generate credentials'}
+              </Button>
+            </div>
+          )}
           {creds && !credsLoading && (
             <>
               <div>
@@ -655,15 +675,22 @@ export default function OrgBuildersPage() {
                   Keep these private. The client certificate expires{' '}
                   {creds.expiresAt ? formatDistanceToNow(new Date(creds.expiresAt * 1000), { addSuffix: true }) : 'in 90 days'}.
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Button type="button" variant="secondary" onClick={() => downloadText('ca.pem', creds.caPem)}>
-                    <Download className="mr-1.5 h-3.5 w-3.5" /> ca.pem
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={() => downloadText('client-cert.pem', creds.clientCertPem)}>
-                    <Download className="mr-1.5 h-3.5 w-3.5" /> client-cert.pem
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={() => downloadText('client-key.pem', creds.clientKeyPem)}>
-                    <Download className="mr-1.5 h-3.5 w-3.5" /> client-key.pem
+                <div className="mt-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() =>
+                      downloadBlob(
+                        `builderhub-${credsBuilder?.name ?? 'builder'}-mtls.zip`,
+                        createZip([
+                          { name: 'ca.pem', content: creds.caPem },
+                          { name: 'client-cert.pem', content: creds.clientCertPem },
+                          { name: 'client-key.pem', content: creds.clientKeyPem },
+                        ])
+                      )
+                    }
+                  >
+                    <Download className="mr-1.5 h-3.5 w-3.5" /> Download credentials (.zip)
                   </Button>
                 </div>
               </div>
@@ -671,7 +698,7 @@ export default function OrgBuildersPage() {
               <div>
                 <p className="text-sm font-medium text-slate-200">2. Create the remote builder</p>
                 <p className="mt-1 text-xs text-slate-500">
-                  Run this from the directory containing the three files above.
+                  Unzip the archive, then run this from the folder containing the three files.
                 </p>
                 <div className="mt-2 rounded-lg border border-slate-800 bg-slate-950 p-3">
                   <pre className="overflow-x-auto whitespace-pre text-xs text-primary-300">{buildxCommand(credsBuilder?.name ?? 'builder', creds)}</pre>
