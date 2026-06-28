@@ -168,16 +168,21 @@ export default function OrgBuildersPage() {
     }
   }
 
-  const handleGetCredentials = async (builder: Builder) => {
-    if (!org?.id) return
+  const handleOpenCredentials = (builder: Builder) => {
     setActiveDropdown(null)
     setCredsBuilder(builder)
     setCreds(null)
     setCredsError(null)
     setCredsModalOpen(true)
+  }
+
+  const handleMintCredentials = async () => {
+    if (!org?.id || !credsBuilder) return
+    setCreds(null)
+    setCredsError(null)
     setCredsLoading(true)
     try {
-      const c = await generateBuilderCredentials(org.id, builder.name)
+      const c = await generateBuilderCredentials(org.id, credsBuilder.name)
       setCreds(c)
     } catch (e) {
       setCredsError(e instanceof Error ? e.message : 'Failed to generate credentials')
@@ -430,7 +435,7 @@ export default function OrgBuildersPage() {
                     )}
                     <button
                       type="button"
-                      onClick={() => handleGetCredentials(builder)}
+                      onClick={() => handleOpenCredentials(builder)}
                       className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-200 hover:border-primary-600 hover:text-primary-300"
                     >
                       <KeyRound className="h-3.5 w-3.5" />
@@ -646,6 +651,21 @@ export default function OrgBuildersPage() {
             <p className="rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-400">
               {credsError}
             </p>
+          )}
+          {!creds && !credsLoading && (
+            <div>
+              <p className="text-sm text-slate-300">
+                Generate a new mutual-TLS client certificate to connect to this builder with buildx.
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Each click issues a fresh 90-day certificate that is shown only once — download the files
+                before closing. Previously downloaded certificates keep working until they expire.
+              </p>
+              <Button type="button" className="mt-3" onClick={handleMintCredentials}>
+                <KeyRound className="mr-1.5 h-3.5 w-3.5" />
+                {credsError ? 'Generate new credentials' : 'Generate credentials'}
+              </Button>
+            </div>
           )}
           {creds && !credsLoading && (
             <>
