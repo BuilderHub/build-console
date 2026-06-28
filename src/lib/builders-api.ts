@@ -13,6 +13,7 @@ interface ProtoBuilderSpec {
   idle_timeout_seconds?: number
   idleTimeoutSeconds?: number
   labels?: Record<string, string>
+  expose?: boolean
 }
 
 /** API may serialize with snake_case or camelCase */
@@ -22,6 +23,8 @@ interface ProtoBuilderStatus {
   nodePort?: number
   phase?: string
   Phase?: string
+  external_endpoint?: string
+  externalEndpoint?: string
 }
 
 interface ProtoBuilder {
@@ -75,6 +78,7 @@ function mapBuilder(p: ProtoBuilder, organizationId: string): Builder {
   const customMemory = labels.memory as string | undefined
 
   const templateRef = (spec.template_ref as string) || (spec.templateRef as string) || undefined
+  const externalEndpoint = status.externalEndpoint ?? status.external_endpoint ?? undefined
 
   return {
     id: name,
@@ -88,6 +92,8 @@ function mapBuilder(p: ProtoBuilder, organizationId: string): Builder {
     maxCacheSize,
     platform,
     templateRef,
+    expose: Boolean(spec.expose),
+    externalEndpoint,
     cpu: customCpu,
     memory: customMemory,
     createdAt: new Date(),
@@ -121,6 +127,7 @@ export interface CreateBuilderParams {
     replicas?: number
     idle_timeout_seconds?: number
     labels?: Record<string, string>
+    expose?: boolean
   }
 }
 
@@ -165,6 +172,45 @@ export async function deleteBuilder(organizationId: string, name: string): Promi
     `/v1/namespaces/${encodeURIComponent(organizationId)}/builders/${encodeURIComponent(name)}`,
     { method: 'DELETE' }
   )
+}
+
+/** mTLS client credentials for connecting to an exposed builder via buildx. */
+export interface BuilderCredentials {
+  caPem: string
+  clientCertPem: string
+  clientKeyPem: string
+  endpoint: string
+  serverName: string
+  expiresAt: number
+}
+
+/** Mint a client certificate (signed by the org CA) for an exposed builder. */
+export async function generateBuilderCredentials(
+  organizationId: string,
+  name: string
+): Promise<BuilderCredentials> {
+  const data = await api<Record<string, unknown>>(
+    `/v1/namespaces/${encodeURIComponent(organizationId)}/builders/${encodeURIComponent(name)}/credentials`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ namespace: organizationId, name }),
+    }
+  )
+  const pick = (...keys: string[]): string => {
+    for (const k of keys) {
+      const v = data[k]
+      if (typeof v === 'string' && v) return v
+    }
+    return ''
+  }
+  return {
+    caPem: pick('caPem', 'ca_pem'),
+    clientCertPem: pick('clientCertPem', 'client_cert_pem'),
+    clientKeyPem: pick('clientKeyPem', 'client_key_pem'),
+    endpoint: pick('endpoint'),
+    serverName: pick('serverName', 'server_name'),
+    expiresAt: Number(data.expiresAt ?? data.expires_at ?? 0),
+  }
 }
 
 /** Wake a sleepy builder (patch last-used annotation). */

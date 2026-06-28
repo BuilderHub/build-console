@@ -16,6 +16,10 @@ export interface Builder {
   maxCacheSize: number // GB
   platform: string[]
   templateRef?: string
+  // Internet exposure via ingress. expose is the desired state; externalEndpoint is the
+  // operator-published address once the IngressRoute and DNS are ready.
+  expose?: boolean
+  externalEndpoint?: string
   // Snapshot of cpu/memory from the template at creation time (for display).
   // If absent, we try to resolve via templateRef using loaded templates.
   cpu?: string
